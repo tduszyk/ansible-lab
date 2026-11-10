@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include fleet_base"
+      ansible.builtin.include_role:
+        name: "fleet_base"

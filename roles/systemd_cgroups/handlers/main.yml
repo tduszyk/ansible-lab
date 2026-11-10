@@ -1,0 +1,9 @@
+---
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart workload service
+  ansible.builtin.systemd:
+    name: "{{ cgroups_service_name }}"
+    state: restarted

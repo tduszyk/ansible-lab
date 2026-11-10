@@ -1,0 +1,20 @@
+[Unit]
+Description=Isolated Production Workload Slice (Cgroups v2)
+DefaultDependencies=no
+Before=slices.target
+
+[Slice]
+# CPU Quota: Max 50% of 1 CPU core (50ms per 100ms CFS period)
+CPUQuota={{ cgroups_cpu_quota }}
+
+# Soft Memory Ceiling: Start throttling and page reclaim at 256MB
+MemoryHigh={{ cgroups_memory_high }}
+
+# Hard Memory Ceiling: Fire OOM Killer if physical RAM touches 512MB
+MemoryMax={{ cgroups_memory_max }}
+
+# Disallow swapping so memory leaks trigger deterministic OOM
+MemorySwapMax=0
+
+[Install]
+WantedBy=slices.target

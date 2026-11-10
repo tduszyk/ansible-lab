@@ -1,0 +1,6 @@
+---
+cgroups_slice_name: "workload.slice"
+cgroups_cpu_quota: "50%"
+cgroups_memory_high: "256M"
+cgroups_memory_max: "512M"
+cgroups_service_name: "burn_workload.service"

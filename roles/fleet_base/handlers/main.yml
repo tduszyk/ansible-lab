@@ -1,0 +1,8 @@
+---
+# handlers file for /home/sysadmin/ansible-lab/roles/fleet_base
+
+- name: Restart LVM Monitor
+  ansible.builtin.systemd:
+    name: lvm2-monitor
+    state: restarted
+    enabled: yes

@@ -1,0 +1,20 @@
+#!/usr/bin/python3
+import time, socket, os
+
+PORT = {{ report_exporter_port }}
+DATA_FILE = "{{ report_exporter_log_file }}"
+
+print(f"[+] Starting exporter on port {PORT}...", flush=True)
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+sock.bind(("0.0.0.0", PORT))
+sock.listen(1)
+print(f"[+] Bound successfully to TCP port {PORT}", flush=True)
+
+with open(DATA_FILE, "a") as f:
+    f.write(f"Timestamp: {time.time()} - Report Initialized\n")
+print(f"[+] Wrote initial record to {DATA_FILE}", flush=True)
+
+while True:
+    time.sleep(10)

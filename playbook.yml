@@ -1,0 +1,6 @@
+---
+- name: Provision Fleet Base Configuration
+  hosts: "rocky-node*"
+  become: yes
+  roles:
+    - fleet_base

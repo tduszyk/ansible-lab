@@ -1,0 +1,58 @@
+---
+# tasks file for /home/sysadmin/ansible-lab/roles/ha_cluster
+- name: Ensure HA packges are installed
+  ansible.builtin.dnf:
+    name:
+      - haproxy
+      - keepalived
+      - policycoreutils-python-utils
+      - firewalld
+      - python3-firewall
+      - psmisc
+    state: present
+
+- name: Allow HAProxy to connect to any port (SELinux)
+  ansible.posix.seboolean:
+    name: haproxy_connect_any
+    state: yes
+    persistent: yes
+  tags: ['molecule-notest']
+
+- name: Deploy HAProxy configuration
+  ansible.builtin.template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    validate: haproxy -c -f %s
+  notify: Restart HAProxy
+
+- name: Ensure HAProxy is started and enabled
+  ansible.builtin.systemd:
+    name: haproxy
+    state: started
+    enabled: yes
+
+- name: Ensure firewalld is started and enabled
+  ansible.builtin.systemd:
+    name: firewalld
+    state: started
+    enabled: yes
+
+- name: Allow VRRP traffic for Keepalived
+  ansible.posix.firewalld:
+    rich_rule: 'rule protocol value="vrrp" accept'
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Deploy Keepalived configuration
+  ansible.builtin.template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+  notify: Restart Keepalived
+
+- name: Ensure Keepalived is started and enabled
+  ansible.builtin.systemd:
+    name: keepalived
+    state: started
+    enabled: yes
+  tags: ['molecule-notest']

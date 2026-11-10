@@ -1,0 +1,51 @@
+---
+- name: Enforce SELinux in targeted mode
+  ansible.posix.selinux:
+    policy: targeted
+    state: enforcing
+  tags: ['molecule-notest']
+
+- name: Apply sysctl kernel and network protections
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-fleet-hardening.conf
+    state: present
+    reload: yes
+  loop:
+    - { key: 'fs.suid_dumpable', value: '0' }
+    - { key: 'kernel.kptr_restrict', value: '2' }
+    - { key: 'kernel.dmesg_restrict', value: '1' }
+    - { key: 'kernel.sysrq', value: '0' }
+    - { key: 'kernel.unprivileged_bpf_disabled', value: '1' }
+    - { key: 'net.ipv4.ip_forward', value: '1' }
+    - { key: 'net.ipv4.conf.all.rp_filter', value: '2' }
+    - { key: 'net.ipv4.conf.default.rp_filter', value: '2' }
+    - { key: 'net.ipv4.tcp_syncookies', value: '1' }
+    - { key: 'net.ipv4.tcp_rfc1337', value: '1' }
+    - { key: 'vm.swappiness', value: '10' }
+    - { key: 'vm.dirty_ratio', value: '15' }
+    - { key: 'vm.dirty_background_ratio', value: '5' }
+  tags: ['molecule-notest']
+
+- name: Ensure baseline system packages are installed
+  ansible.builtin.dnf:
+    name: 
+      - lvm2
+      - acl
+    state: present
+
+- name: Configure LVM thin pool auto-extend threshold
+  ansible.builtin.lineinfile:
+    path: /etc/lvm/lvm.conf
+    regexp: '^[[:space:]]*#?[[:space:]]*thin_pool_autoextend_threshold[[:space:]]*='
+    line: '	thin_pool_autoextend_threshold = 70'
+    backup: yes
+  notify: Restart LVM Monitor
+
+- name: Configure LVM thin pool auto-extend percent
+  ansible.builtin.lineinfile:
+    path: /etc/lvm/lvm.conf
+    regexp: '^[[:space:]]*#?[[:space:]]*thin_pool_autoextend_percent[[:space:]]*='
+    line: '	thin_pool_autoextend_percent = 20'
+  notify: Restart LVM Monitor

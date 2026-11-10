@@ -1,0 +1,23 @@
+module report_trans 1.0;
+
+require {
+	type init_t;
+	type {{ report_exporter_selinux_domain }};
+	type unreserved_port_t;
+	type usr_t;
+	class process transition;
+	class tcp_socket { name_bind listen };
+	class dir { write add_name search };
+	class file { create write open append getattr };
+}
+
+# 1. Process transition from systemd
+allow init_t {{ report_exporter_selinux_domain }}:process transition;
+
+# 2. Network operations: bind to unreserved port, then listen for incoming connections
+allow {{ report_exporter_selinux_domain }} unreserved_port_t:tcp_socket name_bind;
+allow {{ report_exporter_selinux_domain }} self:tcp_socket listen;
+
+# 3. Filesystem operations on /opt/reports/data/
+allow {{ report_exporter_selinux_domain }} usr_t:dir { write add_name search };
+allow {{ report_exporter_selinux_domain }} usr_t:file { create write open append getattr };

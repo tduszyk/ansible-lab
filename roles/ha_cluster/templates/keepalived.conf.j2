@@ -1,0 +1,41 @@
+vrrp_script chk_haproxy {
+    script "/usr/bin/killall -0 haproxy"
+    interval 2
+    weight -50
+}
+
+global_defs {
+    router_id {{ inventory_hostname }}
+}
+
+vrrp_instance VI_1 {
+    state {% if inventory_hostname == groups['ha_nodes'][0] %}MASTER{% else %}BACKUP{% endif %}
+    
+    {% for iface in ansible_interfaces %}
+    {% if hostvars[inventory_hostname]['ansible_' ~ iface] is defined and hostvars[inventory_hostname]['ansible_' ~ iface]['ipv4'] is defined and hostvars[inventory_hostname]['ansible_' ~ iface]['ipv4']['address'] == hostvars[inventory_hostname]['ansible_host'] %}
+    interface {{ iface }}
+    {% endif %}
+    {% endfor %}
+    
+    virtual_router_id 51
+    priority {% if inventory_hostname == groups['ha_nodes'][0] %}101{% else %}100{% endif %}
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass Secret99
+    }
+    unicast_src_ip {{ hostvars[inventory_hostname]['ansible_host'] }}
+    unicast_peer {
+        {% for host in groups['ha_nodes'] %}
+        {% if host != inventory_hostname %}
+        {{ hostvars[host]['ansible_host'] }}
+        {% endif %}
+        {% endfor %}
+    }
+    virtual_ipaddress {
+        192.168.1.80/24
+    }
+    track_script {
+        chk_haproxy
+    }
+}

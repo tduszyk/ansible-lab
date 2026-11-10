@@ -1,0 +1,8 @@
+---
+# defaults file for roles/report_exporter
+report_exporter_port: 9199
+report_exporter_data_dir: /opt/reports/data
+report_exporter_log_file: "{{ report_exporter_data_dir }}/system_report.log"
+report_exporter_user: sysadmin
+report_exporter_group: sysadmin
+report_exporter_selinux_domain: system_mail_t

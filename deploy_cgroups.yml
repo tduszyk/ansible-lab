@@ -1,0 +1,6 @@
+---
+- name: Deploy Cgroups v2 Resource Slicing
+  hosts: targets
+  become: true
+  roles:
+    - systemd_cgroups

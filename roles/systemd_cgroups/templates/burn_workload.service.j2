@@ -1,0 +1,16 @@
+[Unit]
+Description=Controlled Steady-State CPU Workload
+After=network.target
+
+[Service]
+Type=simple
+# Assigns the unit directly into our resource envelope
+Slice={{ cgroups_slice_name }}
+
+# Pure CPU cycle consumer with zero object retention
+ExecStart=/usr/bin/python3 -c "import time; [None for _ in iter(lambda: (time.sleep(0.001), sum(range(5000))), None)]"
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

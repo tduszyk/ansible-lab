@@ -1,0 +1,14 @@
+[Unit]
+Description=SELinux Test Report Exporter
+After=network.target
+
+[Service]
+Type=simple
+User={{ report_exporter_user }}
+SELinuxContext=system_u:system_r:{{ report_exporter_selinux_domain }}:s0
+ExecStart=/usr/local/bin/report_exporter.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

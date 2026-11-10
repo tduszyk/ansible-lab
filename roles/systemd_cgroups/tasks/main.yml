@@ -1,0 +1,35 @@
+---
+- name: Deploy custom workload slice
+  ansible.builtin.template:
+    src: workload.slice.j2
+    dest: "/etc/systemd/system/{{ cgroups_slice_name }}"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload systemd daemon
+
+- name: Deploy steady-state workload service
+  ansible.builtin.template:
+    src: burn_workload.service.j2
+    dest: "/etc/systemd/system/{{ cgroups_service_name }}"
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Reload systemd daemon
+    - Restart workload service
+
+- name: Flush handlers immediately
+  ansible.builtin.meta: flush_handlers
+
+- name: Start workload slice
+  ansible.builtin.systemd:
+    name: "{{ cgroups_slice_name }}"
+    state: started
+    enabled: true
+
+- name: Start steady workload service
+  ansible.builtin.systemd:
+    name: "{{ cgroups_service_name }}"
+    state: started
+    enabled: true

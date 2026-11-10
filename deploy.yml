@@ -1,0 +1,7 @@
+---
+- name: Deploy Fleet Baseline and HA Cluster
+  hosts: ha_nodes
+  become: yes
+  roles:
+    - fleet_base
+    - ha_cluster

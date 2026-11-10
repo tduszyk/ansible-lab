@@ -1,0 +1,6 @@
+---
+- name: Deploy and enforce confined report exporter across worker nodes
+  hosts: targets
+  become: true
+  roles:
+    - role: report_exporter

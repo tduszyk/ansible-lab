@@ -1,0 +1,9 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart report_exporter
+  ansible.builtin.systemd:
+    name: report_exporter
+    state: restarted

@@ -1,0 +1,8 @@
+---
+- name: Zero-Downtime Rolling Update for HA Cluster
+  hosts: ha_nodes
+  become: yes
+  serial: 1
+  
+  roles:
+    - ha_cluster

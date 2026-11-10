@@ -1,0 +1,96 @@
+---
+- name: Install required policy compilation tools and utilities
+  ansible.builtin.dnf:
+    name:
+      - policycoreutils-python-utils
+      - checkpolicy
+      - setools-console
+      - audit
+      - python3
+    state: present
+
+- name: Create working directory for custom SELinux modules
+  ansible.builtin.file:
+    path: /root/selinux-modules
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Deploy report_trans.te policy source
+  ansible.builtin.template:
+    src: report_trans.te.j2
+    dest: /root/selinux-modules/report_trans.te
+    owner: root
+    group: root
+    mode: '0600'
+  register: te_source
+
+- name: Compile intermediate SELinux module (.mod)
+  ansible.builtin.command:
+    cmd: checkmodule -M -m -o /root/selinux-modules/report_trans.mod /root/selinux-modules/report_trans.te
+  when: te_source.changed
+  changed_when: true
+
+- name: Package compiled SELinux policy (.pp)
+  ansible.builtin.command:
+    cmd: semodule_package -o /root/selinux-modules/report_trans.pp -m /root/selinux-modules/report_trans.mod
+  when: te_source.changed
+  changed_when: true
+
+- name: Query installed SELinux modules
+  ansible.builtin.command:
+    cmd: semodule -l
+  register: installed_modules
+  changed_when: false
+
+- name: Install or update SELinux policy module in kernel
+  ansible.builtin.command:
+    cmd: semodule -i /root/selinux-modules/report_trans.pp
+  when: te_source.changed or "'report_trans' not in installed_modules.stdout"
+  changed_when: true
+
+- name: Create data directory for reports
+  ansible.builtin.file:
+    path: "{{ report_exporter_data_dir }}"
+    state: directory
+    owner: "{{ report_exporter_user }}"
+    group: "{{ report_exporter_group }}"
+    mode: '0775'
+    recurse: true
+
+- name: Deploy report_exporter script with proper SELinux entrypoint context
+  ansible.builtin.template:
+    src: report_exporter.py.j2
+    dest: /usr/local/bin/report_exporter.py
+    owner: "{{ report_exporter_user }}"
+    group: "{{ report_exporter_group }}"
+    mode: '0755'
+    setype: sendmail_exec_t
+  notify: Restart report_exporter
+
+- name: Deploy systemd unit file
+  ansible.builtin.template:
+    src: report_exporter.service.j2
+    dest: /etc/systemd/system/report_exporter.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart report_exporter
+
+- name: Flush handlers to ensure daemon is active before verification
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure report_exporter service is enabled and started
+  ansible.builtin.systemd:
+    name: report_exporter
+    state: started
+    enabled: true
+
+- name: Verify port is listening
+  ansible.builtin.wait_for:
+    port: "{{ report_exporter_port }}"
+    host: 127.0.0.1
+    timeout: 10
